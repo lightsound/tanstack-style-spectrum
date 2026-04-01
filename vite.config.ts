@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
@@ -11,9 +10,6 @@ export default defineConfig({
     },
     sortPackageJson: {
       sortScripts: true,
-    },
-    sortTailwindcss: {
-      functions: ["cn"],
     },
   },
   lint: {
@@ -47,7 +43,6 @@ export default defineConfig({
     "*.{js,jsx,ts,tsx,json,css}": "vp check --fix",
   },
   plugins: [
-    tailwindcss(),
     tanstackStart(),
     // react's vite plugin must come after start's vite plugin
     react(),
