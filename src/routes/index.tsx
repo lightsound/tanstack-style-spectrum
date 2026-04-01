@@ -1,3 +1,4 @@
+import { Button } from "@react-spectrum/s2";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -11,9 +12,9 @@ function Home() {
     <main className="main-home">
       <div className="home-stack">
         <h1 className={isBlue ? "title-hero is-blue" : "title-hero"}>Hello World!</h1>
-        <button type="button" onClick={() => setIsBlue((prev) => !prev)}>
+        <Button onPress={() => setIsBlue((prev) => !prev)} variant="accent">
           Toggle
-        </button>
+        </Button>
       </div>
     </main>
   );

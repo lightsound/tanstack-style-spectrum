@@ -7,6 +7,7 @@
   "cSpell.ignorePaths": ["pnpm-lock.yaml", "**/routeTree.gen.ts", "**/*.md"],
   "cSpell.words": [
     "Lefthook",
+    "lightningcss",
     "oxfmt",
     "oxlint",
     "stylesheet",

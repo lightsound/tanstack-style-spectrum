@@ -1,8 +1,25 @@
 /// <reference types="vite-plus/client" />
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { Provider } from "@react-spectrum/s2";
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
+import type { NavigateOptions, RegisteredRouter, ToOptions } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { useCallback } from "react";
 
 import appCss from "../styles.css?url";
+
+declare module "@react-spectrum/s2" {
+  interface RouterConfig {
+    href: ToOptions;
+    routerOptions: Pick<NavigateOptions, Exclude<keyof NavigateOptions, keyof ToOptions>>;
+  }
+}
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -20,8 +37,31 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const navigate = useNavigate();
+  const router = useRouter();
+
+  const spectrumNavigate = useCallback(
+    (path: string, routerOptions: NavigateOptions<RegisteredRouter> | undefined) => {
+      void navigate({
+        to: path,
+        ...routerOptions,
+      } as NavigateOptions<RegisteredRouter>);
+    },
+    [navigate],
+  );
+
+  const spectrumUseHref = useCallback(
+    (href: ToOptions<RegisteredRouter>) => router.buildLocation(href).href,
+    [router],
+  );
+
   return (
-    <html lang="ja">
+    <Provider
+      background="base"
+      elementType="html"
+      locale="ja-JP"
+      router={{ navigate: spectrumNavigate, useHref: spectrumUseHref }}
+    >
       <head>
         <HeadContent />
       </head>
@@ -30,7 +70,7 @@ function RootComponent() {
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
-    </html>
+    </Provider>
   );
 }
 
