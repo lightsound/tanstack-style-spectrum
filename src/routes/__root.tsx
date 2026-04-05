@@ -1,31 +1,57 @@
 /// <reference types="vite-plus/client" />
-import { Provider } from "@react-spectrum/s2";
-import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRoute,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
-import type { NavigateOptions, RegisteredRouter, ToOptions } from "@tanstack/react-router";
+import { Content, Heading, ProgressCircle, Text } from "@react-spectrum/s2";
+import { style } from "@react-spectrum/s2/style" with { type: "macro" };
+import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useCallback } from "react";
 
-import appCss from "../styles.css?url";
+import { SpectrumDocumentProvider } from "../components/SpectrumDocumentProvider";
 
-declare module "@react-spectrum/s2" {
-  interface RouterConfig {
-    href: ToOptions;
-    routerOptions: Pick<NavigateOptions, Exclude<keyof NavigateOptions, keyof ToOptions>>;
-  }
-}
+const bodyLayoutClass = style({
+  display: "flex",
+  flexDirection: "column",
+  height: "full",
+  margin: 0,
+  minHeight: "screen",
+});
+
+const appLayoutRootClass = style({
+  display: "flex",
+  flexDirection: "column",
+  flexGrow: 1,
+  minHeight: 0,
+  minWidth: 0,
+  width: "full",
+});
+
+const fallbackPanelClass = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
+  padding: 16,
+});
+
+const fallbackHeadingClass = style({
+  font: "heading-lg",
+  fontWeight: "bold",
+  margin: 0,
+});
+
+const fallbackBodyClass = style({
+  font: "body",
+  margin: 0,
+});
+
+const fallbackErrorHeadingClass = style({
+  color: "negative",
+  font: "heading-lg",
+  fontWeight: "bold",
+  margin: 0,
+});
 
 export const Route = createRootRoute({
   component: RootComponent,
   errorComponent: ErrorComponent,
   head: () => ({
-    links: [{ href: appCss, rel: "stylesheet" }],
     meta: [
       { charSet: "utf8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
@@ -37,65 +63,49 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const navigate = useNavigate();
-  const router = useRouter();
-
-  const spectrumNavigate = useCallback(
-    (path: string, routerOptions: NavigateOptions<RegisteredRouter> | undefined) => {
-      void navigate({
-        to: path,
-        ...routerOptions,
-      } as NavigateOptions<RegisteredRouter>);
-    },
-    [navigate],
-  );
-
-  const spectrumUseHref = useCallback(
-    (href: ToOptions<RegisteredRouter>) => router.buildLocation(href).href,
-    [router],
-  );
-
   return (
-    <Provider
-      background="base"
-      elementType="html"
-      locale="ja-JP"
-      router={{ navigate: spectrumNavigate, useHref: spectrumUseHref }}
-    >
+    <SpectrumDocumentProvider>
       <head>
         <HeadContent />
       </head>
-      <body>
-        <Outlet />
+      <body className={bodyLayoutClass}>
+        <Content styles={appLayoutRootClass}>
+          <Outlet />
+        </Content>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
-    </Provider>
+    </SpectrumDocumentProvider>
   );
 }
 
 function NotFoundComponent() {
   return (
-    <div className="page-shell">
-      <h1 className="heading-lg">404</h1>
-      <p>ページが見つかりませんでした。</p>
-    </div>
+    <Content styles={fallbackPanelClass}>
+      <Heading level={1} styles={fallbackHeadingClass}>
+        404
+      </Heading>
+      <Text styles={fallbackBodyClass}>ページが見つかりませんでした。</Text>
+    </Content>
   );
 }
 
 function ErrorComponent({ error }: { error: Error }) {
   return (
-    <div className="page-shell">
-      <h1 className="heading-lg heading-error">エラー</h1>
-      <p>{error.message}</p>
-    </div>
+    <Content styles={fallbackPanelClass}>
+      <Heading level={1} styles={fallbackErrorHeadingClass}>
+        エラー
+      </Heading>
+      <Text styles={fallbackBodyClass}>{error.message}</Text>
+    </Content>
   );
 }
 
 function PendingComponent() {
   return (
-    <div className="page-shell">
-      <p>読み込み中...</p>
-    </div>
+    <Content styles={fallbackPanelClass}>
+      <ProgressCircle isIndeterminate />
+      <Text styles={fallbackBodyClass}>読み込み中...</Text>
+    </Content>
   );
 }

@@ -18,10 +18,10 @@
 
 ## React Spectrum S2
 
-- **Install UI via Vite+:** add `@react-spectrum/s2` with **`vp add @react-spectrum/s2`**. Supporting tooling is already in `vite.config.ts`: **`unplugin-parcel-macros`** (must stay **before** `tanstackStart()` / `react()`), **`@react-aria/optimize-locales-plugin`** with `enforce: "pre"`, **`build.target` / `cssMinify` / `rollupOptions.output.manualChunks`** for the `s2-styles` CSS bundle, and **`ssr.noExternal: ["@react-spectrum/s2"]`** so SSR resolves S2’s CSS imports. Do not drop these without replacing them per [Adobe’s React Spectrum S2 docs](https://react-spectrum.adobe.com/react-spectrum/index.html) (Vite tab under _Getting started_).
-- **Locales:** broaden or shrink bundled strings by editing the `locales` list passed to `optimizeLocales.vite()` in `vite.config.ts`.
-- **Root `Provider`:** the app shell uses **`Provider`** from `@react-spectrum/s2` with **`elementType="html"`** in `src/routes/__root.tsx`, plus a TanStack **`navigate` / `useHref`** bridge for client-side links. Refactors should preserve that wiring.
-- **TypeScript `RouterConfig`:** link `href` / `routerOptions` typing for Spectrum + React Aria is augmented in **`src/routes/__root.tsx`** (`declare module "@react-spectrum/s2"` → `RouterConfig`). If you move it, keep a single augmentation that matches `useNavigate` / `buildLocation` (TanStack `ToOptions` / `NavigateOptions`).
+- **Install UI via Vite+:** add `@react-spectrum/s2` with **`vp add @react-spectrum/s2`**. Integration helpers live in **`vite.react-spectrum.mjs`** (`reactSpectrumPlugins`, `reactSpectrumTanStackStartRouter`, `reactSpectrumManualChunk`, `reactSpectrumSsr`) and are wired from **`vite.config.ts`**. Keep the Parcel **macros** (from `reactSpectrumPlugins()`) **before** `tanstackStart()` and **`react()`** after Start’s plugin; keep **`@react-aria/optimize-locales-plugin`** with `enforce: "pre"`; keep **`build.target` / `cssMinify` / `rollupOptions.output.manualChunks`** for the `s2-styles` CSS chunk and **`ssr.noExternal: ["@react-spectrum/s2"]`** so SSR resolves S2’s CSS imports. Pass **`reactSpectrumTanStackStartRouter`** into `tanstackStart({ router: … })` so default route code splitting stays off and S2 **style macros** still expand on TanStack’s `?tsr-split=…` route IDs (larger initial bundles if macros live in routes). Do not drop these patterns without replacing them per [Adobe’s React Spectrum S2 docs](https://react-spectrum.adobe.com/react-spectrum/index.html) (Vite tab under _Getting started_).
+- **Locales:** broaden or shrink bundled strings by editing the `locales` array passed to `optimizeLocales.vite()` in **`vite.react-spectrum.mjs`**.
+- **Root `Provider`:** the app shell uses **`Provider`** from `@react-spectrum/s2` with **`elementType="html"`** in **`src/components/SpectrumDocumentProvider.tsx`**, plus a TanStack **`navigate` / `useHref`** bridge for client-side links. In that bridge, **`useHref`** turns a string or null **`href`** into **`{ to: href ?? "/" }`** before **`router.buildLocation`**, matching how **`navigate`** accepts a string **`pathOrTo`**. `__root.tsx` wraps the document with that provider. Refactors should preserve that wiring.
+- **TypeScript `RouterConfig`:** link `href` / `routerOptions` typing for Spectrum + React Aria is augmented next to that bridge in **`src/components/SpectrumDocumentProvider.tsx`** (`declare module "@react-spectrum/s2"` → `RouterConfig`). Keep a single augmentation that matches `useNavigate` / `buildLocation` (TanStack `ToOptions` / `NavigateOptions`).
 - **Imports in app code:** use **`import { … } from "vite-plus"`** / **`vite-plus/test`** as in Common Pitfalls. That rule applies to config/tooling imports, not to **`@react-spectrum/s2`** in components.
 
 ## Supplementary project tools
@@ -30,3 +30,15 @@ Not part of `vp check`. Use `vp run` so installs stay routed through Vite+.
 
 - **Knip** (`vp run knip`) — unused files, dependencies, and exports. Use when trimming deps or refactoring entry points (`knip.config.ts` configures the project).
 - **react-doctor** (`vp run doctor`) — React-focused health checks. The script uses `--no-lint`; keep ordinary linting on `vp lint`.
+
+## Learned User Preferences
+
+- Prefer **`@react-spectrum/s2`** built-in components (e.g. **`Link`**, **`Heading`**, **`Text`**, **`Content`**, **`Header`**, **`Footer`**) instead of ad-hoc HTML or **`@tanstack/react-router` `Link`** where they fit the design system.
+- Prefer the Spectrum **`style` macro** for styling; avoid growing **`src/styles.css`** for layout and polish.
+- **App shell / sidebar:** aim for a typical SaaS-style, full-viewport-height side navigation with consistent padding; verify in the browser when changing navigation or layout.
+- Keep **`__root.tsx`** lean by moving shell UI behind **TanStack Router layout routes** (e.g. pathless **`_main`**); keep document-level Spectrum + router bridging in **`SpectrumDocumentProvider`**.
+
+## Learned Workspace Facts
+
+- **Parcel macros + TanStack routes:** `reactSpectrumPlugins()` wraps **`unplugin-parcel-macros`** so **`transformInclude`** tests the path after stripping **`?…`** / **`#…`** from the module id; otherwise **`?tsr-split=…`** IDs skip the macro transform.
+- **S2 `style` macro:** macro arguments must be **statically evaluable** at build time—do not feed **runtime state** (e.g. `useState`) into **`style({ … })`** values; use separate static macro classes and choose between them, or patterns like Spectrum **`styles`** / **`UNSAFE_className`** for dynamic composition.

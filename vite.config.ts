@@ -1,13 +1,18 @@
-import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import babel from "@rolldown/plugin-babel";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import macros from "unplugin-parcel-macros";
 import { defineConfig } from "vite-plus";
+
+import {
+  reactSpectrumManualChunk,
+  reactSpectrumPlugins,
+  reactSpectrumSsr,
+  reactSpectrumTanStackStartRouter,
+} from "./vite.react-spectrum.mjs";
 
 export default defineConfig({
   fmt: {
-    ignorePatterns: ["**/routeTree.gen.ts"],
+    ignorePatterns: ["**/routeTree.gen.ts", ".agents/**"],
     sortImports: {
       partitionByComment: true,
     },
@@ -46,14 +51,12 @@ export default defineConfig({
     "*.{js,jsx,ts,tsx,json,css}": "vp check --fix",
   },
   plugins: [
-    {
-      ...optimizeLocales.vite({
-        locales: ["ja-JP", "en-US"],
-      }),
-      enforce: "pre",
-    },
-    macros.vite(),
-    tanstackStart(),
+    ...reactSpectrumPlugins(),
+    tanstackStart({
+      router: {
+        ...reactSpectrumTanStackStartRouter,
+      },
+    }),
     // react's vite plugin must come after start's vite plugin
     react(),
     babel({ presets: [reactCompilerPreset()] }),
@@ -64,9 +67,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (/macro-(.*)\.css$/.test(id) || /@react-spectrum\/s2\/.*\.css$/.test(id)) {
-            return "s2-styles";
-          }
+          return reactSpectrumManualChunk(id);
         },
       },
     },
@@ -74,9 +75,8 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  // S2 の各コンポーネントが .css を ESM import するため、SSR では外部化せず Vite で変換させる
   ssr: {
-    noExternal: ["@react-spectrum/s2"],
+    ...reactSpectrumSsr,
   },
   test: {
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
